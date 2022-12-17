@@ -1,4 +1,4 @@
-##Instructions for starting
+###Instructions for starting
 
 You need node.js and postgresql installed to run the application. Before executing, you need to run the `npm install` or `npm install --force` command.
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -18,15 +18,19 @@ export class TransactionService {
     query: TransactionListQueryDto,
     ip: string,
   ): Promise<TransactionHistoryDto> {
-    const [transactions, total] = await this.transactionRepository
-      .createQueryBuilder('t')
-      .leftJoin('t.account', 'account')
-      .leftJoin('account.client', 'client')
-      .where('client.ip = :ip', { ip })
-      .skip((query.page - 1) * query.limit)
-      .take(query.limit)
-      .getManyAndCount();
+    try {
+      const [transactions, total] = await this.transactionRepository
+        .createQueryBuilder('t')
+        .leftJoin('t.account', 'account')
+        .leftJoin('account.client', 'client')
+        .where('client.ip = :ip', { ip })
+        .skip((query.page - 1) * query.limit)
+        .take(query.limit)
+        .getManyAndCount();
 
-    return { transactions, total };
+      return { transactions, total };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }

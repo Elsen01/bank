@@ -8,6 +8,11 @@ import {
 } from 'typeorm';
 import { Account } from './account.entity';
 
+export enum TransactionType {
+  REPLENISHMENT = 'replenishment',
+  WITHDRAW = 'withdraw',
+}
+
 @Entity()
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
@@ -15,6 +20,9 @@ export class Transaction {
 
   @Column({ type: 'float' })
   value: number;
+
+  @Column({ type: 'enum', enum: TransactionType })
+  type: TransactionType;
 
   @CreateDateColumn({ name: 'transaction_date' })
   transactionDate: Date;

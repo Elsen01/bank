@@ -1,15 +1,19 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { startOfToday } from 'date-fns';
 
 import { Account } from '../../db/entities/account.entity';
 import { Client } from '../../db/entities/client.entity';
-import { Transaction } from '../../db/entities/transaction.entity';
+import {
+  Transaction,
+  TransactionType,
+} from '../../db/entities/transaction.entity';
 
 import { AmountMoneyDto, CreateAccountDto } from './dto/account.request.dto';
 import {
@@ -87,6 +91,24 @@ export class AccountService {
   async withdraw(dto: AmountMoneyDto, ip: string): Promise<AccountResponseDto> {
     const account = await this.getAccountByIp(ip);
 
+    const [dailyWithdraw] = await this.dataSource
+      .getRepository(Transaction)
+      .query(
+        `SELECT SUM(t."value") FILTER (WHERE t."transaction_date" >= '${startOfToday().toISOString()}' AND t."type" = '${
+          TransactionType.WITHDRAW
+        }')::INT AS value FROM "transaction" t`,
+      );
+
+    if (
+      dto.amount > account.dailyWithdrawalLimit ||
+      (dailyWithdraw.value &&
+        dailyWithdraw.value >= account.dailyWithdrawalLimit)
+    ) {
+      throw new BadRequestException(
+        `YOU HAVE EXCEEDED THE DAILY WITHDRAWAL LIMIT`,
+      );
+    }
+
     if (!account.active) {
       throw new BadRequestException(`ACCOUNT BLOCKED`);
     }
@@ -97,7 +119,7 @@ export class AccountService {
 
     account.balance -= dto.amount;
 
-    return await this.createTransaction(account, dto);
+    return await this.createTransaction(account, dto, TransactionType.WITHDRAW);
   }
 
   async replenishment(
@@ -112,7 +134,11 @@ export class AccountService {
 
     account.balance += dto.amount;
 
-    return await this.createTransaction(account, dto);
+    return await this.createTransaction(
+      account,
+      dto,
+      TransactionType.REPLENISHMENT,
+    );
   }
 
   async getAccountByIp(ip: string) {
@@ -138,6 +164,7 @@ export class AccountService {
   private async createTransaction(
     account: Account,
     dto: AmountMoneyDto,
+    type: TransactionType,
   ): Promise<AccountResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -147,6 +174,7 @@ export class AccountService {
       const transaction = new Transaction();
       transaction.account = account;
       transaction.value = dto.amount;
+      transaction.type = type;
 
       await queryRunner.manager.save(transaction);
 

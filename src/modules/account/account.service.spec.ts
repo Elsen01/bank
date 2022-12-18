@@ -55,6 +55,7 @@ export const dataSourceMockFactory: () => MockType<DataSource> = jest.fn(
       return {
         findOne: () => null,
         save: () => null,
+        query: () => [{ value: 0 }],
       };
     },
   }),

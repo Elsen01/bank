@@ -150,13 +150,13 @@ export class AccountService {
 
       await queryRunner.manager.save(transaction);
 
-      const newAccount = await queryRunner.manager.save(account);
+      const updatedAccount = await queryRunner.manager.save(account);
 
       await queryRunner.commitTransaction();
 
       await queryRunner.release();
 
-      return newAccount;
+      return updatedAccount;
     } catch (error) {
       console.log(error);
       await queryRunner.rollbackTransaction();

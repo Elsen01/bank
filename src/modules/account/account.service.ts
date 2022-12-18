@@ -148,9 +148,9 @@ export class AccountService {
       transaction.account = account;
       transaction.value = dto.amount;
 
-      await this.dataSource.getRepository(Transaction).save(transaction);
+      await queryRunner.manager.save(transaction);
 
-      const newAccount = await this.accountRepo.save(account);
+      const newAccount = queryRunner.manager.save(account);
 
       await queryRunner.commitTransaction();
 

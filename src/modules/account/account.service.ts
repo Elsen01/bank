@@ -150,7 +150,7 @@ export class AccountService {
 
       await queryRunner.manager.save(transaction);
 
-      const newAccount = queryRunner.manager.save(account);
+      const newAccount = await queryRunner.manager.save(account);
 
       await queryRunner.commitTransaction();
 
